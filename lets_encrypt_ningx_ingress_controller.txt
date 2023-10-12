@@ -1,0 +1,159 @@
+
+firstly I have created a namespace
+--kubectl create ns ingress-basic1
+
+After that add the helm repository of the ingress-nginx
+-- helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+
+After this update the repo
+--helm repo update
+
+install the nginx-ingress-controller
+--helm install ingress-nginx ingress-nginx/ingress-nginx --set controller.replicaCount=2
+
+Configure your domain
+
+After that create a DNS zone in the Azure with your domain name 
+-- in mycase it is chickenkiller.com
+Add the name servers of afraid DNS to your name servers in azure
+--NS1.AFRAID.ORG
+--NS2.AFRAID.ORG
+--NS3.AFRAID.ORG
+--NS4.AFRAID.ORG
+
+
+After this first disable the validation
+--kubectl label namespace ingress-basic cert-manager.io/disable-validation=true
+
+
+Add the repo to your helm charts
+--helm repo add jetstack https://charts.jetstack.io
+
+
+After this update the repo
+--helm repo update
+
+
+Add the cert manager crds
+--kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.7.1/cert-manager.crds.yaml
+
+Now install the lets encrypt cert manager
+--helm install cert-manager jetstack/cert-manager --namespace ingress-basic --version v1.7.1
+
+
+check the installation of the pods of certificate manager by running the following command
+--kubectl get pods -n ingress-basic1
+After this we have to create a issuer.yaml class that will create certificate 
+--
+$issuer=@"
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: awaisrai19@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+"@
+$issuer | kubectl apply -f - -n ingress-basic
+
+
+
+check the installation using the command
+-- kubectl get clusterissuers.cert.manager.io
+
+
+
+create an ingress routing class
+
+$ingressrouting=@"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello-world-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+  -http:
+      paths:
+      - path: /hello-world-one(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-helloworld-one
+            port:
+              number: 80
+      - path: /hello-world-two(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-helloworld-two
+            port:
+              number: 80
+      - path: /(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-helloworld-one
+            port:
+              number: 80
+"@
+$ingressrouting| kubectl apply -f - -n ingress-basic
+
+
+
+
+
+
+
+
+
+--errors 
+
+Error: INSTALLATION FAILED: rendered manifests contain a resource that already exists. Unable to continue with install: ClusterRoleBinding "ingress-nginx" in namespace "" exists and cannot be imported into the current release: invalid ownership metadata; annotation validation error: key "meta.helm.sh/release-namespace" must equal "ingress-basic1": current value is "ingress-basic"
+Solution : kubectl edit clusterrolebinding ingress-nginx
+chnage the namespace to your current namespace
+
+Error: INSTALLATION FAILED: rendered manifests contain a resource that already exists. Unable to continue with install: ClusterRoleBinding "ingress-nginx" in namespace "" exists and cannot be imported into the current release: invalid ownership metadata; annotation validation error: key "meta.helm.sh/release-namespace" must equal "default": current value is "ingress-basic1"
+Solution : kubectl edit validatingwebhookconfiguration ingress-nginx-admission
+chnage the namespace to your current namespace
+
+
+
+
+
+--resources 
+https://blog.devgenius.io/secure-aks-ingress-with-letsencrypt-f56f698ec6b5
+https://www.youtube.com/watch?v=Kt2p21ZRPHI
+
+
+
+azure services
+devsecops services
+manged services
+az aks show --resource-group AKS --name AKS-CLUSTER --query "agentPoolProfiles[0].vnetSubnetId" -o tsv
+invoke-webrequest -uri http://raikube.chickenkiller.com/.well-known/acme-challenge/aFt3ROS0YKtxABQiuyGvoflJUN05cEIO3qT0s9SUpKE
+
+az aks create --resource-group AKS --name AKS-CLUSTER-1  --network-policy azure --network-plugin azure --node-count 1 --enable-addons http_application_routing
+
+az aks show --resource-group AKS --name AKS-CLUSTER --query addonProfiles.httpApplicationRouting.config.HTTPApplicationRoutingZoneName -o tsv
+
+docker command for getting in the container
+kubectl exec -it react-app-595589498d-bpjc9 sh
+
+  --resource-group AKS \
+   \
+   \
+   \
+   \
+  

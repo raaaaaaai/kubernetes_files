@@ -1,0 +1,2 @@
+kubectl exec -it react-app-5f4fbb8677-lw5tm -- /bin/sh -c "curl http://nodejs-service:5000/api/student/"
+kubectl exec -it react-app-5f4fbb8677-lw5tm -- /bin/sh -c "apk update && apk add curl"  # Assuming you're using Alpine-based image

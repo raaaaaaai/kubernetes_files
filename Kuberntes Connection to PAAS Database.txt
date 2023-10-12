@@ -1,0 +1,50 @@
+az #first create a resource group for the kubernetes cluster
+az group create --name MC-AKS-JPN --location japaneast
+
+#Now create a vnet for the cluster
+az network vnet create -g MC-AKS-IND --name AKS-VNET --address-prefixes 10.1.0.0/16 -l centralindia
+
+#create a subnet for the aks ckuster
+az network vnet subnet create -g MC-AKS-IND -n AKS-Subnet --vnet-name AKS-VNET --address-prefix 10.1.0.0/24 --service-endpoints Microsoft.SQL
+
+#subnet Id save it for the use
+"id": "/subscriptions/dd5dc440-f625-4821-9f87-d7e1b1a1896a/resourceGroups/MC-AKS-IND/providers/Microsoft.Network/virtualNetworks/AKS-VNET/subnets/AKS-Subnet",
+
+#Create a kubernetes cluster in the above created vnet and subnet
+
+#get credential of the subnet
+az aks get-credentials --resource-group MC-AKS-IND --name PAAS_DATABASE_CONNECT 
+
+#create vnet for the mysql database
+az network vnet create --resource-group MC-AKS-IND --name rdbms-vnet --address-prefixes 10.1.0.0/16 --location "centralindia"
+
+#now create the service endpoint
+az network vnet subnet create --resource-group MC-AKS-IND --name rdbms-subnet --vnet-name rdbms-vnet --address-prefix 10.1.0.0/20 --service-endpoints Microsoft.SQL
+
+#save the rdbms subnet id
+"id": "/subscriptions/dd5dc440-f625-4821-9f87-d7e1b1a1896a/resourceGroups/MC-AKS-IND/providers/Microsoft.Network/virtualNetworks/rdbms-vnet/subnets/rdbms-subnet"
+
+az group create --name MySQL-RG --location centralindia
+
+az mysql server create --name awais --resource-group  --location centralindia --admin-user myloginuser --admin-password Fast2018894 --sku-name GP_Gen5_2
+
+
+az mysql server vnet-rule create -n k8sRule -g MC-AKS-IND -s awais --subnet /subscriptions/dd5dc440-f625-4821-9f87-d7e1b1a1896a/resourceGroups/MC-AKS-IND/providers/Microsoft.Network/virtualNetworks/AKS-VNET/subnets/AKS-Subnet
+
+
+az aks get-credentials --resource-group MC-AKS-IND --name react-django-cluster-1
+
+
+lets encrypt
+
+
+
+>az mysql server vnet-rule create -n k8sRule -g MySQL-RG -s rai --subnet 
+
+
+
+kubectl exec -it ubuntu-deployment-c8fcfb8d8-h9r8k /bin/bash
+
+
+
+az aks get-credentials --resource-group MC-AKS-IND --name react-django-cluster-1

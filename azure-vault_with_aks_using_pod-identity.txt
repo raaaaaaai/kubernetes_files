@@ -1,0 +1,123 @@
+first created a cluster 
+
+
+then deployed the aad pod identity for rbac enabled cluster
+--kubectl apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/deployment-rbac.yaml
+--kubectl apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/mic-exception.yaml
+
+
+After this exported the envoirnment variables
+-- $SUBSCRIPTION_ID = "dd5dc440-f625-4821-9f87-d7e1b1a1896a" of aks cluster
+-- $TENANT_ID = "1395fe95-8e7f-4585-b9dd-e4ee290d7d33"
+
+using the managed identity
+-- aks-demo09-agent-pool
+
+After this exported the envoirnment variables
+--$IDENTITY_CLIENT_ID = "$(az identity show -g ${IDENTITY_RESOURCE_GROUP} -n ${IDENTITY_NAME} --query clientId -otsv)"
+--$IDENTITY_RESOURCE_ID = "$(az identity show -g ${IDENTITY_RESOURCE_GROUP} -n ${IDENTITY_NAME} --query id -otsv)"
+
+
+
+
+After this enabled the csi-driver
+
+--az aks enable-addons --addons azure-keyvault-secrets-provider --name aks-demo09 --resource-group MC-AKS-IND
+
+
+After this assingned the two roles
+-- Managed Identity Operator
+-- Virtual Machine Contributor
+
+
+After this created a azure identity
+
+--$aadPodIdentity = @"
+apiVersion: "aadpodidentity.k8s.io/v1"
+kind: AzureIdentity
+metadata:
+  name: ${IDENTITY_NAME}
+spec:
+  type: 0
+  resourceID: ${IDENTITY_RESOURCE_ID}
+  clientID: ${IDENTITY_CLIENT_ID}
+"@
+$aadPodIdentity| kubectl apply -f -
+
+
+After this azure identity binding
+$aadPodIdentitybinding = @"
+apiVersion: "aadpodidentity.k8s.io/v1"
+kind: AzureIdentityBinding
+metadata:
+  name: ${IDENTITY_NAME}-binding
+spec:
+  azureIdentity: ${IDENTITY_NAME}
+  selector: ${IDENTITY_NAME}
+"@
+$aadPodIdentitybinding| kubectl apply -f -
+
+
+
+
+
+After this deployed the secret provider class
+
+$secretProviderKV = @"
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: azure-kvname-podid
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "true"
+    keyvaultName: sql-password-01
+    cloudName: ""
+    objects:  |
+      array:
+        - |
+          objectName: password
+          objectType: secret
+          objectVersion: ""
+    tenantId: "1395fe95-8e7f-4585-b9dd-e4ee290d7d33"
+"@
+$secretProviderKV | kubectl create -f -
+
+
+
+Now deploying the pod
+echo "Deploying a busy Image box Pod for testing..."
+$busyImage = @"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busy-box-secrets-store-inline-podid
+  labels:
+    aadpodidbinding: "aks-demo09-agentpool"
+spec:
+  containers:
+  - name: busybox
+    image: K8s.gcr.io/e2e-test-images/busybox:1.29
+    command:
+      - "/bin/sleep"
+      - "10000"
+    volumeMounts:
+    - name: secrets-store01-inline
+      mountPath: "/mnt/secrets-store"
+      readOnly: true
+  volumes:
+  - name: secrets-store01-inline
+    csi:
+      driver: secrets-store.csi.k8s.io
+      readOnly: true
+      volumeAttributes:
+        secretProviderClass: "azure-kvname-podid"
+"@
+$busyImage  | kubectl apply -f -
+
+
+
+
+check that the secrets has been mounted
+-- kubectl exec busy-box-secrets-store-inline-podid -- ls /mnt/secrets-store

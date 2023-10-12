@@ -1,0 +1,7 @@
+az aks update -n UN-APAC-AKS-NP-MRP -g UN-APAC-RG-NP-MRP --attach-acr AENapacacrnpmrp
+
+kubectl create ns front-end
+
+kubectl create ns back-end
+
+kubectl create ns nginx-service

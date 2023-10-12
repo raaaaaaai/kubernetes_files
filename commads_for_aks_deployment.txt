@@ -1,0 +1,35 @@
+1.  kubectl create ns front-end
+
+2.  kubectl create ns back-end
+
+
+3.  kubectl apply -f react-configMap.yml -n front-end
+
+4.  kubectl apply -f react-deployment.yml -n front-end
+
+5.  kubectl apply -f react-service.yml -n front-end
+
+
+6.  kubectl apply -f python-configMap.yml -n back-end
+
+7.  kubectl apply -f python-deployment.yml -n back-end
+
+8.  kubectl apply -f python-service.yml -n back-end
+
+
+
+9.  kubectl get pods -n front-end
+
+10. kubectl get services -n front-end
+
+11. kubectl get pods -n back-end
+
+12. kubectl get servcies -n back-end
+
+13. kubectl logs <pod-name> -n front-end
+
+14. kubectl logs <pod-name> -n back-end
+
+15. kubeclt describe pod <pod-name> -n front-end
+
+16. kubeclt describe pod <pod-name> -n back-end

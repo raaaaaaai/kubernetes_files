@@ -121,3 +121,32 @@ $busyImage  | kubectl apply -f -
 
 check that the secrets has been mounted
 -- kubectl exec busy-box-secrets-store-inline-podid -- ls /mnt/secrets-store
+
+
+
+
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: azure-kvname-system-01
+spec:
+  provider: azure
+  parameters:
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"    # Set to true for using managed identity
+    userAssignedIdentityID: ""      # If empty, then defaults to use the system assigned identity on the VM
+    keyvaultName: testVaultLoreal
+    cloudName: "AzurePublicCloud"                   # [OPTIONAL for Azure] if not provided, the Azure environment defaults to AzurePublicCloud
+    objects:  |
+      array:
+        - |
+          objectName: LorealtestCert
+          objectType: cert        # object types: secret, key, or cert
+          objectVersion: ""       # [OPTIONAL] object versions, default to latest if empty
+    tenantId: 7ca492c5-9850-497a-91a9-444305c93949       # The tenant ID of the key vault
+  # secretObjects:
+  # - data:
+  #   - key: cert-key
+  #     objectName: cert-key
+  #   secretName: cert-secret-key
+  #   type: Opaque

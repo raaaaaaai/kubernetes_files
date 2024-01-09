@@ -132,8 +132,7 @@ metadata:
 spec:
   provider: azure
   parameters:
-    usePodIdentity: "false"
-    useVMManagedIdentity: "true"    # Set to true for using managed identity
+    usePodIdentity: "true"  
     userAssignedIdentityID: ""      # If empty, then defaults to use the system assigned identity on the VM
     keyvaultName: testVaultLoreal
     cloudName: "AzurePublicCloud"                   # [OPTIONAL for Azure] if not provided, the Azure environment defaults to AzurePublicCloud
